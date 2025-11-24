@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BI Physio – Stručna fizioterapija za vaše zdravlje</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigacija -->
+    <header class="header">
+        <nav class="nav">
+            <div class="nav-logo">
+                <a href="#pocetna">BI Physio</a>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#pocetna">Početna</a></li>
+                <li><a href="#usluge">Usluge</a></li>
+                <li><a href="#o-nama">O nama</a></li>
+                <li><a href="#kontakt">Kontakt</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Hero sekcija -->
+    <main>
+        <section id="pocetna" class="hero">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1>BI Physio – Stručna fizioterapija za vaše zdravlje</h1>
+                    <p>Pružamo profesionalne fizioterapijske usluge prilagođene vašim potrebama. Naš tim stručnjaka posvećen je vašem oporavku i poboljšanju kvalitete života.</p>
+                    <a href="#kontakt" class="btn btn-primary">Rezerviraj termin</a>
+                </div>
+                <div class="hero-image">
+                    <img src="hero.webp" alt="BI Physio fizioterapija">
+                </div>
+            </div>
+        </section>
+
+        <!-- Usluge -->
+        <section id="usluge" class="usluge">
+            <div class="container">
+                <h2>Naše usluge</h2>
+                <div class="usluge-grid">
+                    <div class="usluga-card">
+                        <h3>Kineziterapija</h3>
+                        <p>Individualni programi vježbanja za oporavak nakon ozljeda i poboljšanje pokretljivosti.</p>
+                    </div>
+                    <div class="usluga-card">
+                        <h3>Manualna terapija</h3>
+                        <p>Stručne manipulacije i mobilizacije za ublažavanje boli i poboljšanje funkcije zglobova.</p>
+                    </div>
+                    <div class="usluga-card">
+                        <h3>Fizikalna terapija</h3>
+                        <p>Korištenje ultrazvuka, elektroterapije i drugih fizikalnih metoda za ubrzanje oporavka.</p>
+                    </div>
+                    <div class="usluga-card">
+                        <h3>Rehabilitacija sportaša</h3>
+                        <p>Specijalizirani programi oporavka za sportaše nakon ozljeda i operacija.</p>
+                    </div>
+                    <div class="usluga-card">
+                        <h3>Terapija boli u leđima</h3>
+                        <p>Kompleksni pristup liječenju kroničnih i akutnih problema s leđima.</p>
+                    </div>
+                    <div class="usluga-card">
+                        <h3>Posturalna korekcija</h3>
+                        <p>Procjena i korekcija posturalnih problema kroz individualne programe vježbanja.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- O nama -->
+        <section id="o-nama" class="o-nama">
+            <div class="container">
+                <div class="o-nama-content">
+                    <div class="o-nama-text">
+                        <h2>O nama</h2>
+                        <p>BI Physio je moderna fizioterapijska ordinacija posvećena pružanju najkvalitetnijih usluga našim pacijentima. Naš tim sastoji se od iskusnih fizioterapeuta koji kontinuirano usavršavaju svoje vještine kroz edukacije i praćenje najnovijih trendova u fizioterapiji.</p>
+                        <p>Koristimo dokazane metode liječenja i individualno pristupamo svakom pacijentu, osiguravajući optimalne rezultate terapije. Naša misija je pomoći vam da postignete svoje ciljeve u oporavku i poboljšanju kvalitete života.</p>
+                        <p>Radimo s pacijentima svih dobnih skupina i različitih stanja – od sportskih ozljeda do kroničnih bolesti i postoperativne rehabilitacije.</p>
+                    </div>
+                    <div class="o-nama-image">
+                        <img src="hero.webp" alt="BI Physio tim">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Kontakt i rezervacije -->
+        <section id="kontakt" class="kontakt">
+            <div class="container">
+                <h2>Kontakt i rezervacije</h2>
+                <div class="kontakt-content">
+                    <form class="rezervacija-form" id="rezervacijaForm">
+                        <div class="form-group">
+                            <label for="ime_prezime">Ime i prezime *</label>
+                            <input type="text" id="ime_prezime" name="ime_prezime" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email *</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="telefon">Telefon *</label>
+                            <input type="tel" id="telefon" name="telefon" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="usluga">Usluga *</label>
+                            <select id="usluga" name="usluga" required>
+                                <option value="">Odaberite uslugu</option>
+                                <option value="kineziterapija">Kineziterapija</option>
+                                <option value="manualna_terapija">Manualna terapija</option>
+                                <option value="fizikalna_terapija">Fizikalna terapija</option>
+                                <option value="rehabilitacija_sportasa">Rehabilitacija sportaša</option>
+                                <option value="terapija_boli_u_ledima">Terapija boli u leđima</option>
+                                <option value="posturalna_korekcija">Posturalna korekcija</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="zeljeni_termin">Željeni termin *</label>
+                            <input type="datetime-local" id="zeljeni_termin" name="zeljeni_termin" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="poruka">Poruka</label>
+                            <textarea id="poruka" name="poruka" rows="4"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Pošalji rezervaciju</button>
+                    </form>
+                    <div class="kontakt-info">
+                        <h3>Kontakt podaci</h3>
+                        <div class="kontakt-item">
+                            <strong>Adresa:</strong>
+                            <p>Primjer ulice 123<br>10000 Zagreb, Hrvatska</p>
+                        </div>
+                        <div class="kontakt-item">
+                            <strong>Telefon:</strong>
+                            <p><a href="tel:+385123456789">+385 1 234 567 89</a></p>
+                        </div>
+                        <div class="kontakt-item">
+                            <strong>Email:</strong>
+                            <p><a href="mailto:info@biphysio.hr">info@biphysio.hr</a></p>
+                        </div>
+                        <div class="kontakt-item">
+                            <strong>Radno vrijeme:</strong>
+                            <p>Ponedjeljak - Petak: 08:00 - 20:00<br>Subota: 09:00 - 14:00<br>Nedjelja: Zatvoreno</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>BI Physio</h3>
+                    <p>Stručna fizioterapija za vaše zdravlje</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Brzi linkovi</h4>
+                    <ul>
+                        <li><a href="#pocetna">Početna</a></li>
+                        <li><a href="#usluge">Usluge</a></li>
+                        <li><a href="#o-nama">O nama</a></li>
+                        <li><a href="#kontakt">Kontakt</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Društvene mreže</h4>
+                    <div class="social-links">
+                        <a href="#" aria-label="Facebook">Facebook</a>
+                        <a href="#" aria-label="Instagram">Instagram</a>
+                        <a href="#" aria-label="LinkedIn">LinkedIn</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 BI Physio. Sva prava pridržana.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scroll za anchor linkove
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Forma submit handler (za sada samo prevent default)
+        document.getElementById('rezervacijaForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            // Ovdje će se kasnije dodati logika za slanje na Supabase
+            alert('Rezervacija će biti poslana. (Funkcionalnost će biti implementirana s Next.js i Supabase)');
+        });
+    </script>
+</body>
+</html>
+
