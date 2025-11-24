@@ -25,5 +25,6 @@
 
 # Netlify Functions za API rute
 [functions]
+  directory = "netlify/functions"
   node_bundler = "esbuild"
 
