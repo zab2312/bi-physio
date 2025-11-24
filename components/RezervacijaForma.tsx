@@ -2,6 +2,7 @@
 
 import { useState, FormEvent, useEffect, useRef } from 'react'
 import Toast from './Toast'
+import { callSupabaseFunction } from '@/lib/supabaseClient'
 
 interface FormMessage {
   type: 'success' | 'error' | null
@@ -38,13 +39,11 @@ export default function RezervacijaForma() {
       await new Promise(resolve => setTimeout(resolve, 200))
       
       try {
-        const response = await fetch(`/api/appointments/slots?date=${selectedDate}`)
+        const data = await callSupabaseFunction('get-slots', {
+          method: 'GET',
+          params: { date: selectedDate }
+        })
         
-        if (!response.ok) {
-          throw new Error('Greška pri dohvaćanju dostupnih termina')
-        }
-
-        const data = await response.json()
         setSlots(data.slots || [])
         setSlotsFadeState('fade-in')
         
@@ -54,7 +53,7 @@ export default function RezervacijaForma() {
         console.error('Greška pri dohvaćanju slotova:', error)
         setMessage({
           type: 'error',
-          text: 'Dogodila se greška pri dohvaćanju dostupnih termina.'
+          text: error instanceof Error ? error.message : 'Dogodila se greška pri dohvaćanju dostupnih termina.'
         })
         setSlotsFadeState('normal')
       } finally {
@@ -101,28 +100,15 @@ export default function RezervacijaForma() {
         poruka: formData.get('poruka') || '',
       }
 
-      const response = await fetch('/api/appointments', {
+      const data = await callSupabaseFunction('create-appointment', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(appointmentData),
+        body: appointmentData
       })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        // Posebna poruka za race condition
-        if (response.status === 409) {
-          throw new Error('Odabrani termin je upravo postao zauzet, molimo odaberite drugi termin.')
-        }
-        throw new Error(data.error || 'Dogodila se greška pri slanju rezervacije.')
-      }
 
       // Uspješno rezervirano - prikaži toast
       setMessage({
         type: 'success',
-        text: 'Termin je uspješno zabilježen, primit ćete potvrdu emailom.'
+        text: data.message || 'Termin je uspješno zabilježen, primit ćete potvrdu emailom.'
       })
       setShowToast(true)
 
@@ -146,8 +132,10 @@ export default function RezervacijaForma() {
       // Osvježi slotove nakon kratke pauze
       setTimeout(() => {
         if (selectedDate) {
-          fetch(`/api/appointments/slots?date=${selectedDate}`)
-            .then(res => res.json())
+          callSupabaseFunction('get-slots', {
+            method: 'GET',
+            params: { date: selectedDate }
+          })
             .then(data => setSlots(data.slots || []))
             .catch(console.error)
         }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
-import { Appointment } from '@/lib/supabaseClient'
+import { Appointment, callSupabaseFunction } from '@/lib/supabaseClient'
 import CancelModal from '@/components/CancelModal'
 import SkeletonLoader from '@/components/SkeletonLoader'
 
@@ -36,13 +36,10 @@ export default function AdminRezervacije() {
       setLoading(true)
       setError(null)
 
-      const response = await fetch('/api/appointments')
+      const data = await callSupabaseFunction('get-appointments', {
+        method: 'GET'
+      })
       
-      if (!response.ok) {
-        throw new Error('Greška pri učitavanju podataka')
-      }
-
-      const data = await response.json()
       setAppointments(data.appointments || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Dogodila se greška pri učitavanju podataka.')
@@ -84,18 +81,11 @@ export default function AdminRezervacije() {
     try {
       setUpdatingId(id)
       
-      const response = await fetch(`/api/appointments/${id}`, {
+      await callSupabaseFunction('update-appointment', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
+        params: { id: id.toString() },
+        body: { status: newStatus }
       })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Greška pri ažuriranju statusa')
-      }
 
       // Optimistički update lokalnog state-a
       setAppointments(prevAppointments =>
@@ -131,14 +121,10 @@ export default function AdminRezervacije() {
     try {
       setUpdatingId(cancelModal.appointmentId)
       
-      const response = await fetch(`/api/appointments/${cancelModal.appointmentId}`, {
+      await callSupabaseFunction('delete-appointment', {
         method: 'DELETE',
+        params: { id: cancelModal.appointmentId.toString() }
       })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Greška pri otkazivanju termina')
-      }
 
       // Ukloni termin iz state-a
       setAppointments(prevAppointments =>

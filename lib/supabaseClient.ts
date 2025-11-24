@@ -47,3 +47,40 @@ export const supabaseAdmin = supabaseServiceRoleKey
     )
   : null
 
+// Helper za Supabase Edge Functions URL
+export const getSupabaseFunctionUrl = (functionName: string): string => {
+  return `${supabaseUrl}/functions/v1/${functionName}`
+}
+
+// Helper za pozivanje Supabase Edge Functions
+export const callSupabaseFunction = async (functionName: string, options: {
+  method?: string
+  body?: any
+  params?: Record<string, string>
+} = {}) => {
+  const url = new URL(getSupabaseFunctionUrl(functionName))
+  
+  // Add query parameters
+  if (options.params) {
+    Object.entries(options.params).forEach(([key, value]) => {
+      url.searchParams.append(key, value)
+    })
+  }
+
+  const response = await fetch(url.toString(), {
+    method: options.method || 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${supabaseAnonKey}`,
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+    throw new Error(error.error || `HTTP error! status: ${response.status}`)
+  }
+
+  return response.json()
+}
+

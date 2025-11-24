@@ -3,28 +3,7 @@
   publish = "out"
 
 [[redirects]]
-  from = "/api/appointments"
-  to = "/.netlify/functions/api/appointments/appointments"
-  status = 200
-
-[[redirects]]
-  from = "/api/appointments/slots"
-  to = "/.netlify/functions/api/appointments/slots"
-  status = 200
-
-[[redirects]]
-  from = "/api/appointments/*"
-  to = "/.netlify/functions/api/appointments/appointment-id"
-  status = 200
-  force = true
-
-[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-# Netlify Functions za API rute
-[functions]
-  directory = "functions"
-  node_bundler = "esbuild"
 
