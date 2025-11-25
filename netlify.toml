@@ -2,6 +2,10 @@
   command = "npm run build:netlify"
   publish = "out"
 
+# Onemogući Next.js Runtime - koristimo statički export
+[build.environment]
+  NEXT_RUNTIME = "static"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
