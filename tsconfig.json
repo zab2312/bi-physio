@@ -23,6 +23,6 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "app/_api_temp", "netlify"]
+  "exclude": ["node_modules", "app/_api_temp", "netlify", "supabase/functions", "supabase/functions/**"]
 }
 
