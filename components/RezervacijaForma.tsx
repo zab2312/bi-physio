@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, FormEvent, useEffect, useRef } from 'react'
+import { useState, FormEvent, useEffect, useRef, useCallback } from 'react'
 import Toast from './Toast'
 import { callSupabaseFunction } from '@/lib/supabaseClient'
 
@@ -16,13 +16,44 @@ interface TimeSlot {
 
 export default function RezervacijaForma() {
   const [selectedDate, setSelectedDate] = useState<string>('')
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
   const [slots, setSlots] = useState<TimeSlot[]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
-  const [bookingSlot, setBookingSlot] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [message, setMessage] = useState<FormMessage>({ type: null, text: '' })
   const [showToast, setShowToast] = useState(false)
   const [slotsFadeState, setSlotsFadeState] = useState<'normal' | 'fade-out' | 'fade-in'>('normal')
   const formRef = useRef<HTMLFormElement>(null)
+
+  const loadSlots = useCallback(async (date: string) => {
+    setLoadingSlots(true)
+    setSlotsFadeState('fade-out')
+
+    // Kratka pauza za fade-out animaciju
+    await new Promise(resolve => setTimeout(resolve, 200))
+
+    try {
+      const data = await callSupabaseFunction('get-slots', {
+        method: 'GET',
+        params: { date }
+      })
+
+      setSlots(data.slots || [])
+      setSlotsFadeState('fade-in')
+
+      // Vrati na normalno stanje nakon animacije
+      setTimeout(() => setSlotsFadeState('normal'), 400)
+    } catch (error) {
+      console.error('Greška pri dohvaćanju slotova:', error)
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Dogodila se greška pri dohvaćanju dostupnih termina.'
+      })
+      setSlotsFadeState('normal')
+    } finally {
+      setLoadingSlots(false)
+    }
+  }, [])
 
   // Dohvat slotova kada se odabere datum
   useEffect(() => {
@@ -31,45 +62,28 @@ export default function RezervacijaForma() {
       return
     }
 
-    const fetchSlots = async () => {
-      setLoadingSlots(true)
-      setSlotsFadeState('fade-out')
-      
-      // Kratka pauza za fade-out animaciju
-      await new Promise(resolve => setTimeout(resolve, 200))
-      
-      try {
-        const data = await callSupabaseFunction('get-slots', {
-          method: 'GET',
-          params: { date: selectedDate }
-        })
-        
-        setSlots(data.slots || [])
-        setSlotsFadeState('fade-in')
-        
-        // Vrati na normalno stanje nakon animacije
-        setTimeout(() => setSlotsFadeState('normal'), 400)
-      } catch (error) {
-        console.error('Greška pri dohvaćanju slotova:', error)
-        setMessage({
-          type: 'error',
-          text: error instanceof Error ? error.message : 'Dogodila se greška pri dohvaćanju dostupnih termina.'
-        })
-        setSlotsFadeState('normal')
-      } finally {
-        setLoadingSlots(false)
-      }
+    loadSlots(selectedDate)
+  }, [selectedDate, loadSlots])
+
+  const handleSlotClick = (time: string) => {
+    if (!selectedDate || !time) return
+    setSelectedSlot(prev => (prev === time ? null : time))
+    setMessage({ type: null, text: '' })
+  }
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (!selectedSlot) {
+      setMessage({
+        type: 'error',
+        text: 'Molimo odaberite termin prije slanja rezervacije.'
+      })
+      setShowToast(true)
+      return
     }
 
-    fetchSlots()
-  }, [selectedDate])
-
-  // Automatska rezervacija klikom na slot
-  const handleSlotClick = async (time: string) => {
-    if (!selectedDate || !time) return
-
-    // Provjera da su obavezna polja popunjena
-    if (!formRef.current) return
+    if (!formRef.current || !selectedDate) return
 
     const formData = new FormData(formRef.current)
     const ime_prezime = formData.get('ime_prezime') as string
@@ -80,13 +94,13 @@ export default function RezervacijaForma() {
     if (!ime_prezime || !email || !telefon || !usluga) {
       setMessage({
         type: 'error',
-        text: 'Molimo popunite sva obavezna polja (ime, email, telefon, usluga) prije odabira termina.'
+        text: 'Molimo popunite sva obavezna polja.'
       })
+      setShowToast(true)
       return
     }
 
-    // Postavljanje loading state-a
-    setBookingSlot(time)
+    setIsSubmitting(true)
     setMessage({ type: null, text: '' })
 
     try {
@@ -96,7 +110,7 @@ export default function RezervacijaForma() {
         telefon,
         usluga,
         datum: selectedDate,
-        vrijeme: time,
+        vrijeme: selectedSlot,
         poruka: formData.get('poruka') || '',
       }
 
@@ -112,12 +126,6 @@ export default function RezervacijaForma() {
       })
       setShowToast(true)
 
-      // Osvježi slotove da se prikaže da je termin sada zauzet
-      const updatedSlots = slots.map(slot =>
-        slot.time === time ? { ...slot, available: false } : slot
-      )
-      setSlots(updatedSlots)
-
       // Reset forme (osim datuma)
       if (formRef.current) {
         const dateInput = formRef.current.querySelector('[name="datum"]') as HTMLInputElement
@@ -125,22 +133,14 @@ export default function RezervacijaForma() {
         formRef.current.reset()
         if (dateInput) {
           dateInput.value = dateValue
-          setSelectedDate(dateValue)
         }
       }
 
-      // Osvježi slotove nakon kratke pauze
-      setTimeout(() => {
-        if (selectedDate) {
-          callSupabaseFunction('get-slots', {
-            method: 'GET',
-            params: { date: selectedDate }
-          })
-            .then(data => setSlots(data.slots || []))
-            .catch(console.error)
-        }
-      }, 500)
+      setSelectedSlot(null)
 
+      if (selectedDate) {
+        await loadSlots(selectedDate)
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Dogodila se greška pri slanju rezervacije.'
       setMessage({
@@ -149,7 +149,7 @@ export default function RezervacijaForma() {
       })
       setShowToast(true)
     } finally {
-      setBookingSlot(null)
+      setIsSubmitting(false)
     }
   }
 
@@ -166,7 +166,7 @@ export default function RezervacijaForma() {
         />
       )}
       
-      <form className="rezervacija-form" ref={formRef}>
+      <form className="rezervacija-form" ref={formRef} onSubmit={handleSubmit}>
 
       <div className="form-group">
         <label htmlFor="ime_prezime">Ime i prezime *</label>
@@ -175,7 +175,7 @@ export default function RezervacijaForma() {
           id="ime_prezime" 
           name="ime_prezime" 
           required 
-          disabled={!!bookingSlot}
+          disabled={isSubmitting}
         />
       </div>
 
@@ -186,7 +186,7 @@ export default function RezervacijaForma() {
           id="email" 
           name="email" 
           required 
-          disabled={!!bookingSlot}
+          disabled={isSubmitting}
         />
       </div>
 
@@ -197,7 +197,7 @@ export default function RezervacijaForma() {
           id="telefon" 
           name="telefon" 
           required 
-          disabled={!!bookingSlot}
+          disabled={isSubmitting}
         />
       </div>
 
@@ -207,7 +207,7 @@ export default function RezervacijaForma() {
           id="usluga" 
           name="usluga" 
           required 
-          disabled={!!bookingSlot}
+          disabled={isSubmitting}
         >
           <option value="">Odaberite uslugu</option>
           <option value="Kineziterapija">Kineziterapija</option>
@@ -228,11 +228,12 @@ export default function RezervacijaForma() {
           value={selectedDate}
           onChange={(e) => {
             setSelectedDate(e.target.value)
+            setSelectedSlot(null)
             setMessage({ type: null, text: '' })
           }}
           min={minDate}
           required
-          disabled={!!bookingSlot}
+          disabled={isSubmitting}
         />
       </div>
 
@@ -248,21 +249,18 @@ export default function RezervacijaForma() {
                 <button
                   key={slot.time}
                   type="button"
-                  className={`time-slot ${slot.available ? 'available' : 'booked'} ${bookingSlot === slot.time ? 'booking' : ''}`}
+                  className={`time-slot ${slot.available ? 'available' : 'booked'} ${selectedSlot === slot.time ? 'selected' : ''}`}
                   onClick={() => slot.available && handleSlotClick(slot.time)}
-                  disabled={!slot.available || !!bookingSlot}
+                  disabled={!slot.available || isSubmitting}
                 >
                   {slot.time}
-                  {bookingSlot === slot.time && (
-                    <span className="slot-loading">...</span>
-                  )}
                 </button>
               ))}
             </div>
           )}
           {!loadingSlots && slots.length > 0 && (
             <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-light)' }}>
-              Kliknite na slobodan termin za automatsku rezervaciju
+              Odaberite slobodan termin i potvrdite klikom na gumb Rezerviraj
             </small>
           )}
         </div>
@@ -274,9 +272,16 @@ export default function RezervacijaForma() {
           id="poruka" 
           name="poruka" 
           rows={4}
-          disabled={!!bookingSlot}
+          disabled={isSubmitting}
         />
       </div>
+      <button
+        type="submit"
+        className="primary-button"
+        disabled={!selectedSlot || isSubmitting}
+      >
+        {isSubmitting ? 'Slanje...' : 'Rezerviraj'}
+      </button>
     </form>
     </>
   )
