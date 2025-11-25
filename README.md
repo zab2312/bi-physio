@@ -55,11 +55,6 @@ npm run dev
 ```
 bi-physio/
 ├── app/
-│   ├── api/
-│   │   └── appointments/
-│   │       ├── route.ts              # GET i POST za rezervacije
-│   │       └── [id]/
-│   │           └── route.ts          # PATCH za update statusa
 │   ├── admin/
 │   │   └── rezervacije/
 │   │       └── page.tsx              # Admin stranica
@@ -71,6 +66,12 @@ bi-physio/
 ├── lib/
 │   └── supabaseClient.ts             # Supabase klijent konfiguracija
 ├── supabase/
+│   ├── functions/                    # Supabase Edge Functions
+│   │   ├── get-slots/                # Dohvat dostupnih termina
+│   │   ├── create-appointment/       # Kreiranje rezervacije
+│   │   ├── get-appointments/         # Dohvat svih rezervacija
+│   │   ├── update-appointment/       # Ažuriranje statusa
+│   │   └── delete-appointment/       # Brisanje rezervacije
 │   └── appointments.sql              # SQL za kreiranje tablice
 └── public/
     └── hero.webp                     # Slike
@@ -98,53 +99,44 @@ bi-physio/
 
 ## 🔐 Sigurnost
 
-- Service Role Key se koristi samo na server-side (API routes)
+- Service Role Key se koristi u Supabase Edge Functions (server-side)
 - Anon Key se koristi za client-side operacije
 - **NIKAD** ne commitaj `.env.local` datoteku u git!
 
-## 📝 API Endpoints
+## 📝 API Endpoints (Supabase Edge Functions)
 
-### POST `/api/appointments`
-Kreiranje nove rezervacije.
+Aplikacija koristi Supabase Edge Functions umjesto Next.js API ruta:
 
-**Request body:**
-```json
-{
-  "ime_prezime": "Marko Horvat",
-  "email": "marko@example.com",
-  "telefon": "091 123 4567",
-  "usluga": "Kineziterapija",
-  "datum": "2024-01-15",
-  "vrijeme": "10:00"
-}
-```
+- `get-slots` - Dohvat dostupnih termina za određeni datum
+- `create-appointment` - Kreiranje nove rezervacije
+- `get-appointments` - Dohvat svih rezervacija (za admin stranicu)
+- `update-appointment` - Ažuriranje statusa rezervacije
+- `delete-appointment` - Brisanje rezervacije
 
-**Response (uspjeh):**
-```json
-{
-  "message": "Termin je uspješno zabilježen, primit ćete potvrdu emailom.",
-  "appointment": { ... }
-}
-```
+Za detalje o deployanju Functions, vidi `SUPABASE_FUNCTIONS_DEPLOY.md`.
 
-**Response (termin zauzet):**
-```json
-{
-  "error": "Nažalost, odabrani termin je zauzet. Molimo odaberite drugi termin."
-}
-```
+**Primjer poziva:**
+```typescript
+import { callSupabaseFunction } from '@/lib/supabaseClient'
 
-### GET `/api/appointments`
-Dohvat svih rezervacija (za admin stranicu).
+// Dohvat slotova
+const data = await callSupabaseFunction('get-slots', {
+  method: 'GET',
+  params: { date: '2024-01-15' }
+})
 
-### PATCH `/api/appointments/[id]`
-Ažuriranje statusa rezervacije.
-
-**Request body:**
-```json
-{
-  "status": "confirmed"
-}
+// Kreiranje rezervacije
+const result = await callSupabaseFunction('create-appointment', {
+  method: 'POST',
+  body: {
+    ime_prezime: "Marko Horvat",
+    email: "marko@example.com",
+    telefon: "091 123 4567",
+    usluga: "Kineziterapija",
+    datum: "2024-01-15",
+    vrijeme: "10:00"
+  }
+})
 ```
 
 ## 🎨 Stilovi

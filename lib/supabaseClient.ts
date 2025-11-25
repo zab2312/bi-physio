@@ -16,12 +16,13 @@ export interface Appointment {
 // Inicijalizacija Supabase klijenta
 // Environment varijable:
 // - NEXT_PUBLIC_SUPABASE_URL: URL vašeg Supabase projekta
-// - SUPABASE_SERVICE_ROLE_KEY: Service role key za server-side operacije (ne koristi se u browseru!)
 // - NEXT_PUBLIC_SUPABASE_ANON_KEY: Anon key za client-side operacije
+//
+// Napomena: Service Role Key se koristi samo u Supabase Edge Functions,
+// ne u frontend kodu (sigurnosni razlozi)
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
@@ -32,20 +33,6 @@ export const supabase = createClient<{ appointments: Appointment }>(
   supabaseUrl,
   supabaseAnonKey
 )
-
-// Server-side klijent (koristi service role key za admin operacije)
-export const supabaseAdmin = supabaseServiceRoleKey
-  ? createClient<{ appointments: Appointment }>(
-      supabaseUrl,
-      supabaseServiceRoleKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
-  : null
 
 // Helper za Supabase Edge Functions URL
 export const getSupabaseFunctionUrl = (functionName: string): string => {
