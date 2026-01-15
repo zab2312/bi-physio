@@ -74,21 +74,37 @@ Dodaj svoj logo datoteku kao `public/logo.png`. Logo se koristi u faviconu i gdj
 
 ### 5. Kreiraj admin korisnika
 
-Za kreiranje admin korisnika:
+Za kreiranje admin korisnika (zaposlenog):
 
-1. Idite na Supabase Dashboard > Authentication > Users
-2. Kliknite "Add user" ili "Invite user"
-3. Unesite email i lozinku za admin korisnika
-4. Nakon što je korisnik kreiran, u SQL Editoru izvršite:
+1. **Kreiraj korisnika u Supabase Auth:**
+   - Idi na Supabase Dashboard > Authentication > Users
+   - Klikni "Add user" ili "Invite user"
+   - Unesi email i lozinku za admin korisnika
+   - Kopiraj User ID (UUID)
+
+2. **Kreiraj profil za zaposlenog:**
+   - Idi na Supabase Dashboard > Table Editor > `profiles`
+   - Klikni "Insert row"
+   - Unesi:
+     - `id`: User ID iz koraka 1 (UUID)
+     - `full_name`: Ime zaposlenog
+     - `role`: `admin` (ili `staff` za običnog zaposlenog)
+   - Spremi
+
+**Ili kroz SQL Editor:**
 
 ```sql
--- Zamijeni 'user-email@example.com' s emailom admin korisnika
-UPDATE profiles 
-SET role = 'admin' 
-WHERE id = (SELECT id FROM auth.users WHERE email = 'user-email@example.com');
+-- Zamijeni 'user-id-here' s User ID-om iz auth.users
+-- Zamijeni 'Ime Prezime' s imenom zaposlenog
+INSERT INTO profiles (id, full_name, role)
+VALUES (
+  'user-id-here',
+  'Ime Prezime',
+  'admin'
+);
 ```
 
-Alternativno, možeš direktno u Supabase Dashboard > Table Editor > profiles promijeniti `role` na `admin` za određenog korisnika.
+**Napomena:** Korisnici (klijenti) nemaju profile - samo zaposleni (admin/staff) imaju profile u `profiles` tablici.
 
 ## Pokretanje projekta
 

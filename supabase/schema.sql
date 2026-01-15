@@ -1,7 +1,8 @@
 -- Supabase Schema za BI Physio projekt
 -- Izvrši ovaj SQL u Supabase SQL Editoru
 
--- Tablica profiles za korisnike
+-- Tablica profiles za zaposlene (admin/staff)
+-- Korisnici (klijenti) nemaju profile, samo zaposleni
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   role TEXT DEFAULT 'staff' CHECK (role IN ('admin', 'staff')),
@@ -74,6 +75,13 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Triggeri za automatsko ažuriranje updated_at
+-- Prvo ukloni stare triggere ako postoje
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
+DROP TRIGGER IF EXISTS update_bookings_updated_at ON bookings;
+DROP TRIGGER IF EXISTS update_availability_rules_updated_at ON availability_rules;
+DROP TRIGGER IF EXISTS update_availability_exceptions_updated_at ON availability_exceptions;
+
+-- Kreiraj triggere
 CREATE TRIGGER update_profiles_updated_at
   BEFORE UPDATE ON profiles
   FOR EACH ROW
@@ -103,10 +111,16 @@ ALTER TABLE availability_rules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE availability_exceptions ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
-CREATE POLICY "Users can view their own profile"
-  ON profiles FOR SELECT
-  USING (auth.uid() = id);
+-- Prvo ukloni stare politike ako postoje
+DROP POLICY IF EXISTS "Users can view their own profile" ON profiles;
+DROP POLICY IF EXISTS "Admins can view all profiles" ON profiles;
+DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
+DROP POLICY IF EXISTS "Admins can insert profiles" ON profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
+DROP POLICY IF EXISTS "Admins can update all profiles" ON profiles;
+DROP POLICY IF EXISTS "Admins can delete profiles" ON profiles;
 
+-- Samo admini mogu vidjeti i upravljati profilima (samo zaposleni imaju profile)
 CREATE POLICY "Admins can view all profiles"
   ON profiles FOR SELECT
   USING (
@@ -116,15 +130,17 @@ CREATE POLICY "Admins can view all profiles"
     )
   );
 
--- Omogući korisnicima da kreiraju svoj profil
-CREATE POLICY "Users can insert their own profile"
+-- Samo admini mogu kreirati profile (za nove zaposlene)
+CREATE POLICY "Admins can insert profiles"
   ON profiles FOR INSERT
-  WITH CHECK (auth.uid() = id);
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
 
-CREATE POLICY "Users can update their own profile"
-  ON profiles FOR UPDATE
-  USING (auth.uid() = id);
-
+-- Samo admini mogu ažurirati profile
 CREATE POLICY "Admins can update all profiles"
   ON profiles FOR UPDATE
   USING (
@@ -134,7 +150,24 @@ CREATE POLICY "Admins can update all profiles"
     )
   );
 
+-- Samo admini mogu brisati profile
+CREATE POLICY "Admins can delete profiles"
+  ON profiles FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
 -- Bookings policies
+-- Prvo ukloni stare politike ako postoje
+DROP POLICY IF EXISTS "Anyone can create bookings" ON bookings;
+DROP POLICY IF EXISTS "Anyone can view bookings in the future" ON bookings;
+DROP POLICY IF EXISTS "Admins can view all bookings" ON bookings;
+DROP POLICY IF EXISTS "Admins can update bookings" ON bookings;
+DROP POLICY IF EXISTS "Admins can delete bookings" ON bookings;
+
 CREATE POLICY "Anyone can create bookings"
   ON bookings FOR INSERT
   WITH CHECK (true);
@@ -177,6 +210,11 @@ CREATE POLICY "Admins can delete bookings"
   );
 
 -- Availability rules policies
+-- Prvo ukloni stare politike ako postoje
+DROP POLICY IF EXISTS "Anyone can view active availability rules" ON availability_rules;
+DROP POLICY IF EXISTS "Admins can view all availability rules" ON availability_rules;
+DROP POLICY IF EXISTS "Admins can manage availability rules" ON availability_rules;
+
 CREATE POLICY "Anyone can view active availability rules"
   ON availability_rules FOR SELECT
   USING (is_active = TRUE);
@@ -200,6 +238,10 @@ CREATE POLICY "Admins can manage availability rules"
   );
 
 -- Availability exceptions policies
+-- Prvo ukloni stare politike ako postoje
+DROP POLICY IF EXISTS "Anyone can view availability exceptions" ON availability_exceptions;
+DROP POLICY IF EXISTS "Admins can manage availability exceptions" ON availability_exceptions;
+
 CREATE POLICY "Anyone can view availability exceptions"
   ON availability_exceptions FOR SELECT
   USING (true);
@@ -224,19 +266,11 @@ VALUES
   (6, '09:00:00', '13:00:00', 45, 0, TRUE)  -- Subota
 ON CONFLICT DO NOTHING;
 
--- Funkcija za kreiranje profila pri registraciji korisnika
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.profiles (id, full_name, role)
-  VALUES (NEW.id, NEW.raw_user_meta_data->>'full_name', 'staff');
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- Napomena: Profili se NE kreiraju automatski
+-- Admin mora ručno kreirati profil za zaposlenog u profiles tablici
+-- Korisnici (klijenti) nemaju profile, samo zaposleni
 
--- Trigger za automatsko kreiranje profila
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW
-  EXECUTE FUNCTION public.handle_new_user();
+-- Ukloni stari trigger i funkciju ako postoje (više se ne koriste)
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user();
 

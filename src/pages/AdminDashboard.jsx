@@ -55,43 +55,23 @@ const AdminDashboard = () => {
         return
       }
 
-      // Prvo provjeri postoji li profil, ako ne postoji kreiraj ga
-      let { data: profile, error: profileError } = await supabase
+      // Provjeri postoji li profil (samo zaposleni imaju profile)
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single()
 
-      // Ako profil ne postoji, kreiraj ga
-      if (profileError && profileError.code === 'PGRST116') {
-        console.log('Profil ne postoji, kreiram...')
-        const { data: newProfile, error: insertError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: session.user.id,
-              full_name: session.user.email?.split('@')[0] || 'Admin',
-              role: 'staff'
-            }
-          ])
-          .select()
-          .single()
-
-        if (insertError) {
-          console.error('Error creating profile:', insertError)
-          setLoading(false)
-          return
-        }
-        profile = newProfile
-      } else if (profileError) {
-        console.error('Error fetching profile:', profileError)
+      // Ako profil ne postoji, korisnik nije zaposleni
+      if (profileError || !profile) {
+        console.log('Profil ne postoji - korisnik nije zaposleni')
         setLoading(false)
         return
       }
 
       // Provjeri je li admin
-      if (!profile || profile.role !== 'admin') {
-        console.log('User is not admin. Role:', profile?.role)
+      if (profile.role !== 'admin') {
+        console.log('User is not admin. Role:', profile.role)
         setLoading(false)
         return
       }
@@ -449,44 +429,23 @@ const AdminLogin = () => {
 
       if (authError) throw authError
 
-      // Provjeri postoji li profil, ako ne postoji kreiraj ga
-      let { data: profile, error: profileError } = await supabase
+      // Provjeri postoji li profil (samo zaposleni imaju profile)
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
         .single()
 
-      // Ako profil ne postoji, kreiraj ga
-      if (profileError && profileError.code === 'PGRST116') {
-        console.log('Profil ne postoji, kreiram...')
-        const { data: newProfile, error: insertError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: data.user.id,
-              full_name: data.user.email?.split('@')[0] || 'Admin',
-              role: 'staff'
-            }
-          ])
-          .select()
-          .single()
-
-        if (insertError) {
-          console.error('Error creating profile:', insertError)
-          await supabase.auth.signOut()
-          throw new Error('Greška pri kreiranju profila. Kontaktiraj administratora.')
-        }
-        profile = newProfile
-      } else if (profileError) {
-        console.error('Error fetching profile:', profileError)
+      // Ako profil ne postoji, korisnik nije zaposleni
+      if (profileError || !profile) {
         await supabase.auth.signOut()
-        throw new Error('Greška pri dohvaćanju profila')
+        throw new Error('Nemate pristup admin panelu. Profil ne postoji.')
       }
 
       // Provjeri je li admin
-      if (!profile || profile.role !== 'admin') {
+      if (profile.role !== 'admin') {
         await supabase.auth.signOut()
-        throw new Error('Nemate pristup admin panelu. Vaša uloga: ' + (profile?.role || 'nepoznata'))
+        throw new Error('Nemate pristup admin panelu. Vaša uloga: ' + profile.role)
       }
 
       navigate('/admin')
