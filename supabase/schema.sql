@@ -116,6 +116,11 @@ CREATE POLICY "Admins can view all profiles"
     )
   );
 
+-- Omogući korisnicima da kreiraju svoj profil
+CREATE POLICY "Users can insert their own profile"
+  ON profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
+
 CREATE POLICY "Users can update their own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id);
