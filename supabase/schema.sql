@@ -110,6 +110,17 @@ ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE availability_rules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE availability_exceptions ENABLE ROW LEVEL SECURITY;
 
+-- Funkcija za provjeru je li korisnik admin (bez circular dependency)
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
 -- Profiles policies
 -- Prvo ukloni stare politike ako postoje
 DROP POLICY IF EXISTS "Users can view their own profile" ON profiles;
@@ -120,45 +131,30 @@ DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
 DROP POLICY IF EXISTS "Admins can update all profiles" ON profiles;
 DROP POLICY IF EXISTS "Admins can delete profiles" ON profiles;
 
--- Samo admini mogu vidjeti i upravljati profilima (samo zaposleni imaju profile)
+-- Korisnici mogu vidjeti svoj vlastiti profil (potrebno za provjeru role)
+CREATE POLICY "Users can view their own profile"
+  ON profiles FOR SELECT
+  USING (auth.uid() = id);
+
+-- Admini mogu vidjeti sve profile (koristi funkciju bez circular dependency)
 CREATE POLICY "Admins can view all profiles"
   ON profiles FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 -- Samo admini mogu kreirati profile (za nove zaposlene)
 CREATE POLICY "Admins can insert profiles"
   ON profiles FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  WITH CHECK (public.is_admin());
 
 -- Samo admini mogu ažurirati profile
 CREATE POLICY "Admins can update all profiles"
   ON profiles FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 -- Samo admini mogu brisati profile
 CREATE POLICY "Admins can delete profiles"
   ON profiles FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 -- Bookings policies
 -- Prvo ukloni stare politike ako postoje
@@ -175,39 +171,20 @@ CREATE POLICY "Anyone can create bookings"
 CREATE POLICY "Anyone can view bookings in the future"
   ON bookings FOR SELECT
   USING (
-    date >= CURRENT_DATE OR
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
+    date >= CURRENT_DATE OR public.is_admin()
   );
 
 CREATE POLICY "Admins can view all bookings"
   ON bookings FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 CREATE POLICY "Admins can update bookings"
   ON bookings FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 CREATE POLICY "Admins can delete bookings"
   ON bookings FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 -- Availability rules policies
 -- Prvo ukloni stare politike ako postoje
@@ -221,21 +198,11 @@ CREATE POLICY "Anyone can view active availability rules"
 
 CREATE POLICY "Admins can view all availability rules"
   ON availability_rules FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 CREATE POLICY "Admins can manage availability rules"
   ON availability_rules FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 -- Availability exceptions policies
 -- Prvo ukloni stare politike ako postoje
@@ -248,12 +215,7 @@ CREATE POLICY "Anyone can view availability exceptions"
 
 CREATE POLICY "Admins can manage availability exceptions"
   ON availability_exceptions FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 -- Seed podaci za default pravila dostupnosti
 INSERT INTO availability_rules (weekday, start_time, end_time, slot_minutes, break_minutes, is_active)

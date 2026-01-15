@@ -49,11 +49,22 @@ const AdminDashboard = () => {
   const checkUser = async () => {
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      if (sessionError || !session) {
+      
+      console.log('Session check:', { session: !!session, error: sessionError, userId: session?.user?.id })
+      
+      if (sessionError) {
         console.error('Session error:', sessionError)
         setLoading(false)
         return
       }
+      
+      if (!session || !session.user) {
+        console.log('No session found')
+        setLoading(false)
+        return
+      }
+
+      console.log('Fetching profile for user:', session.user.id)
 
       // Provjeri postoji li profil (samo zaposleni imaju profile)
       const { data: profile, error: profileError } = await supabase
@@ -62,8 +73,21 @@ const AdminDashboard = () => {
         .eq('id', session.user.id)
         .single()
 
+      console.log('Profile fetch result:', { profile, error: profileError })
+
       // Ako profil ne postoji, korisnik nije zaposleni
-      if (profileError || !profile) {
+      if (profileError) {
+        console.error('Profile error details:', {
+          message: profileError.message,
+          code: profileError.code,
+          details: profileError.details,
+          hint: profileError.hint
+        })
+        setLoading(false)
+        return
+      }
+
+      if (!profile) {
         console.log('Profil ne postoji - korisnik nije zaposleni')
         setLoading(false)
         return
@@ -76,6 +100,7 @@ const AdminDashboard = () => {
         return
       }
 
+      console.log('Admin user confirmed:', profile)
       setUser(profile)
     } catch (error) {
       console.error('Error checking user:', error)
@@ -429,6 +454,8 @@ const AdminLogin = () => {
 
       if (authError) throw authError
 
+      console.log('Login successful, checking profile for user:', data.user.id)
+
       // Provjeri postoji li profil (samo zaposleni imaju profile)
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -436,8 +463,21 @@ const AdminLogin = () => {
         .eq('id', data.user.id)
         .single()
 
+      console.log('Profile fetch result:', { profile, error: profileError })
+
       // Ako profil ne postoji, korisnik nije zaposleni
-      if (profileError || !profile) {
+      if (profileError) {
+        console.error('Profile error details:', {
+          message: profileError.message,
+          code: profileError.code,
+          details: profileError.details,
+          hint: profileError.hint
+        })
+        await supabase.auth.signOut()
+        throw new Error('Nemate pristup admin panelu. Profil ne postoji. Greška: ' + profileError.message)
+      }
+
+      if (!profile) {
         await supabase.auth.signOut()
         throw new Error('Nemate pristup admin panelu. Profil ne postoji.')
       }
@@ -447,6 +487,8 @@ const AdminLogin = () => {
         await supabase.auth.signOut()
         throw new Error('Nemate pristup admin panelu. Vaša uloga: ' + profile.role)
       }
+
+      console.log('Admin access granted:', profile)
 
       navigate('/admin')
       window.location.reload()
