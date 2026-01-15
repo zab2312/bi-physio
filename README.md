@@ -194,20 +194,46 @@ Primjer:
 <img src="/hero-image.jpg" />
 ```
 
-## Deployment
+## Deployment na Vercel
 
-### Netlify / Vercel
+### Koraci za deployment:
 
-1. Push kod na GitHub/GitLab
-2. Poveži repozitorij s Netlify/Vercel
-3. Dodaj environment varijable u dashboardu
-4. Deploy
+1. **Kreiraj novi repozitorij na GitHubu:**
+   - Idi na https://github.com/new
+   - Ime: `bi-physio`
+   - Klikni "Create repository"
 
-### Environment varijable za deployment
+2. **Push kod na GitHub:**
+   ```bash
+   git remote add origin https://github.com/TVOJ_USERNAME/bi-physio.git
+   git branch -M main
+   git push -u origin main
+   ```
 
-Obavezno dodaj:
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+3. **Deploy na Vercel:**
+   - Idi na https://vercel.com
+   - Klikni "Add New Project"
+   - Importuj GitHub repozitorij `bi-physio`
+   - Vercel će automatski detektirati Vite projekt
+   - **Dodaj Environment Variables:**
+     - `VITE_SUPABASE_URL` = tvoj Supabase URL
+     - `VITE_SUPABASE_ANON_KEY` = tvoj Supabase anon key
+   - Klikni "Deploy"
+
+4. **Nakon deploymenta:**
+   - Vercel će automatski deployati svaki push na `main` branch
+   - Tvoj site će biti dostupan na `bi-physio.vercel.app` (ili custom domenu ako ga postaviš)
+
+### Environment varijable za Vercel
+
+Obavezno dodaj u Vercel dashboardu:
+- `VITE_SUPABASE_URL` - Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` - Supabase anon/public key
+
+**Gdje pronaći Supabase podatke:**
+1. Supabase Dashboard > Settings > API
+2. Project URL = `VITE_SUPABASE_URL`
+3. anon/public key = `VITE_SUPABASE_ANON_KEY`
 
 ## Ograničenja i napomene
 
